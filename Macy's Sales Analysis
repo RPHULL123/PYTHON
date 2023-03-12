@@ -1,0 +1,266 @@
+# Macy's Store Analysis
+
+# Macy's inc. is a trusted source for quality brands at great values from off-price to luxury. Macy’s, Inc. operates department 
+# stores under the nameplates Macy’s and Bloomingdale’s, and specialty stores that include Bloomingdale’s The Outlet, 
+# Bluemercury and Macy’s Backstage.  Macy's inc. currently have 783 boxes(stores) in 722 locations. The boxes include Macy's 
+# funiture stores, Department Stores, Bloomingdales's etc. Macy's inc. networth is estimated $6.14B. Macy's hub location is
+# New York Herald Square. Macy's conduct the annual Macy's Thanksgiving Day Parade in New York City since 1924 and has sponsored
+# the city's annual Fourth of July fireworks display since 1976. Macy's Herald Square is one of the largest department stores in
+# the world.
+
+## Dataset Description
+
+# The data we will be using is titled 'macys_Store_Sales'
+# This is historical data that report sales from 2010-02-05 to 2012-11-01.
+# The areas covered in the dataset are:
+# Store - the store number
+# Date - the week of sales
+# Weekly_Sales - sales for the given store
+# Holiday_Flag - whether the week is a special holiday week 1 – Holiday week 0 – Non-holiday week
+# Temperature - Temperature on the day of sale
+# Fuel_Price - Cost of fuel in the region
+# CPI – Prevailing consumer price index
+# Unemployment - Prevailing unemployment rate
+
+# The second dataset that we will create includes the four main holidays in America with different dates over four years. The 
+# below data set includes:
+# Super Bowl: 12-Feb-10, 11-Feb-11, 10-Feb-12, 8-Feb-13
+# Labour Day: 10-Sep-10, 9-Sep-11, 7-Sep-12, 6-Sep-13
+# Thanksgiving: 26-Nov-10, 25-Nov-11, 23-Nov-12, 29-Nov-13
+# Christmas: 31-Dec-10, 30-Dec-11, 28-Dec-12, 27-Dec-13
+
+## Analysis
+
+# First import the appropriate libary functions
+
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import sklearn
+import warnings
+warnings.filterwarnings('ignore')
+%matplotlib inline
+
+# Import Macys retail dataset
+data = pd.read_csv('Macys_Store_sales.csv')
+# View a snapshot of the data
+data.head()
+
+# What type of data are in the columns
+data.dtypes
+
+# 'Date' is an object type that needs to be converted to Datetime 
+from datetime import datetime
+data['Date'] = pd.to_datetime(data['Date'])
+
+# Check data type has been converted
+data.dtypes
+
+## Which store has maximum sales?
+
+# After grouping the stores i will then sum() to aquire total sales
+max_sales = data.groupby('Store')['Weekly_Sales'].sum().round().sort_values(ascending=False)
+
+pd.DataFrame(max_sales).head(5)
+
+# Store 20 has acquired the maximum sales followed closely by store 4
+
+## Which store has maximum standard deviation? Also,what is the coefficient of mean to standard deviation?
+
+# The new variable is grouped by stores and the standard deviation can be found. 
+data_std = data.groupby('Store')['Weekly_Sales'].std().round(2).sort_values(ascending=False)
+pd.DataFrame(data_std).head()
+
+# The results show store 14 has achieved maximum standard deviation
+
+# The coefficient of mean to standard deviation is found by storing Store 14 into a variable and conducting std() and mean()
+macys14 = data[data.Store == 14].Weekly_Sales
+m_s_d = macys14.std()/macys14.mean()*100
+m_s_d
+
+# 15.71 is the mean to standard deviation
+
+## Which store/s has a good quarterly growth rate in Q3’2012?
+
+# Isolating the data between '01-01-2012' and '09-30-2012' i can then use it to find the max growth in Q3
+
+macys_data_Q32012 = data[(pd.to_datetime(data['Date']) >= pd.to_datetime('07-01-2012')) & (pd.to_datetime(data['Date']) <= pd.to_datetime('09-30-2012'))]
+macys_data_growth = macys_data_Q32012.groupby(['Store'])['Weekly_Sales'].sum()
+print("Store Number {} has Good Quartely Growth in Q3'2012 {}".format(macys_data_growth.idxmax(),macys_data_growth.max()))
+
+## We have four holidays in the year. Some holidays have a negative impact on sales. Find out holidays that have higher sales than the mean sales in the non-holiday season for all stores together?
+
+# Super Bowl - 12-Feb-10, 11-Feb-11, 10-Feb-12, 8-Feb-13
+# Labour Day - 10-Sep-10, 9-Sep-11, 7-Sep-12, 6-Sep-13
+# Thanksgiving - 26-Nov-10, 25-Nov-11, 23-Nov-12, 29-Nov-13
+# Christmas - 31-Dec-10, 30-Dec-11, 28-Dec-12, 27-Dec-13
+# Compare the holiday event sales mean between holiday dates and non-holiday dates. 
+
+super_bowl = ['12-2-2010', '11-2-2011', '10-2-2012', '8-2-2013']
+labour_day = ['10-3-2010', '9-9-2011', '7-9-2012', '6-9-2013']
+thanksgiving = ['26-11-2010', '25-11-2011', '23-11-2012' ,'29-11-2013']
+christmas = ['31-12-2010', '30-12-2011', '28-12-2012', '27-12-2013']         
+              
+
+# Holiday sales
+super_bowl_s = data.loc[data.Date.isin(super_bowl)]['Weekly_Sales'].mean()
+labour_day_s = data.loc[data.Date.isin(labour_day)]['Weekly_Sales'].mean()
+thanksgiving_s = data.loc[data.Date.isin(thanksgiving)]['Weekly_Sales'].mean()
+christmas_s = data.loc[data.Date.isin(christmas)]['Weekly_Sales'].mean()
+
+super_bowl_s = round(super_bowl_s,2)
+labour_day_s = round(labour_day_s,2)
+thanksgiving_s = round(thanksgiving_s,2)
+christmas_s = round(christmas_s,2)
+
+super_bowl_s, labour_day_s, thanksgiving_s, christmas_s
+
+# Non-holiday sales
+non_holiday_s = data[(data['Holiday_Flag'] == 0)]['Weekly_Sales'].mean()
+non_holiday_s = round(non_holiday_s,2)
+non_holiday_s
+
+# Collate all information into a dataframe
+Highest_Selling_Period = pd.DataFrame([{'Super Bowl Sales':super_bowl_s,
+                              'Labour Day Sales':labour_day_s,
+                              'Thanksgiving Sales':thanksgiving_s,
+                              'Christmas Sales':christmas_s,
+                              'Non-Holiday Sales':non_holiday_s}])
+
+Highest_Selling_Period
+
+# Results have shown Thanksgiving have higher sales than the Non-Holiday sales with $1471273.43 
+
+## Provide a monthly and semester view of sales in units and give insights
+
+# monthly sales
+data['month'] = data['Date'].dt.month 
+plt.figure(figsize=(14,7), dpi=80)
+plt.bar(data['month'], data['Weekly_Sales'], color = 'orange')
+plt.xlabel('Month_of_Year')
+plt.ylabel('Weekly_Sales')
+plt.title('Monthly Sales')
+plt.show()
+
+# Yearly Sales
+data['Year']= data['Date'].dt.year
+plt.figure(figsize=(11,8), dpi=85)
+data.groupby('Year')[['Weekly_Sales']].sum().plot(kind='bar', legend=False)
+plt.title('Year Sales')
+plt.show()
+
+# The 2 graphs give the insite that December has the highest monthly sales. Alongside from previous research this can be 
+# attributed to Thanksgiving Sales alongside Christmas Sales. Both holidays provide higher sale days than non-holidays sales. 
+# The highest selling year occured in 2011. This trend is support by 'Macrotrends.net' which shows a large spike in quarterly
+# growth in December 2011 at around 9%.
+
+## For Store 1 – Build  prediction models to forecast demand. Linear Regression – Utilize variables like date and restructure dates as 1 for 5 Feb 2010 (starting from the earliest date in order). Hypothesize if CPI, unemployment, and fuel price have any impact on sales.
+
+# As we are building prediction models we will be using machine learning. By deciding on dependent and independent variables
+# i can then test the model on a percentage of the data. I will use Import train_test_spit from sklearn.model_selection to 
+# complete this. The formula for this is y = mx + c
+
+sns.pairplot(data[['Fuel_Price', 'CPI', 'Unemployment','Weekly_Sales']],hue='Weekly_Sales') 
+
+# By using pairplot on Seaborn you can see that the data is mostly linear. 
+
+# I will now build a prediction model to forecast demand
+features = data[data['Store'] ==1][['Store','Date']]
+obj = data[data['Store'] ==1][['Date']]
+obj.index +=1
+features.Date = obj.index
+features.head()
+
+weekly_target = data[data['Store'] ==1]['Weekly_Sales']
+weekly_target.head()
+
+from sklearn.model_selection import train_test_split
+x_train,x_test,y_train,y_test = train_test_split(x_features_object,y_target,random_state=1)
+
+from sklearn.linear_model import LinearRegression
+linear_reg = LinearRegression()
+linear_reg.fit(x_train,y_train)
+dataset = data[data['Store'] ==1][['Store','CPI','Unemployment','Fuel_Price']]
+dataset.head()
+
+set_cpi = data[data['Store'] ==1]['CPI'].astype('int64')
+set_unemployment = data[data['Store'] ==1]['Unemployment'].astype('int64')
+
+from sklearn.model_selection import train_test_split
+x_train_cpi,x_test_cpi,y_train_cpi,y_test_cpi = train_test_split(dataset,set_cpi,random_state=1)
+x_train_unemp, x_test_unemp, y_train_unemp, y_test_unemp = train_test_split(dataset,set_unemployment,random_state=1)
+
+from sklearn.linear_model import LogisticRegression
+logreg = LogisticRegression(max_iter=10000)
+logreg.fit(x_train_cpi,y_train_cpi)
+y_pred = logreg.predict(x_test_cpi)
+logreg.fit(x_train_unemp,y_train_unemp)
+
+pred_unemp = logreg.predict(x_test_unemp)
+
+from sklearn import metrics
+print(metrics.accuracy_score(y_test_cpi,y_pred))
+print(metrics.accuracy_score(y_test_unemp,pred_unemp))
+
+print('cpi actual :', y_test_cpi.values[0:30])
+print('cpi Predict :', y_pred[0:30])
+print('Real Unemployment :', y_test_unemp.values[0:30])
+print('Predict Unemployment :', y_pred_unemp[0:30])
+
+data['Day'] = pd.to_datetime(data['Date']).dt.day_name()
+data.head()
+
+## build model
+
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+from sklearn.linear_model import LinearRegression
+
+# Select features and target 
+
+data['Year']= data['Date'].dt.year
+data['Month']= data['Date'].dt.month
+data['Day']= data['Date'].dt.day
+
+X = data[['Store','Fuel_Price','CPI','Unemployment','Day','Month','Year']]
+y = data['Weekly_Sales']
+
+# Split data to train and test (0.80:0.20)
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2)
+
+
+# Linear Regression model
+print('Linear Regression:')
+print()
+lin_reg = LinearRegression()
+lin_reg.fit(X_train, y_train)
+y_pred = lin_reg.predict(X_test)
+print('Accuracy:',lin_reg.score(X_train, y_train)*100)
+print('MAE:', metrics.mean_absolute_error(y_test, y_pred))
+print('MSE:', metrics.mean_squared_error(y_test, y_pred))
+print('RMSE:', np.sqrt(metrics.mean_squared_error(y_test, y_pred)))
+
+sns.scatterplot(y_pred, y_test)
+
+# Random Forest Regressor
+print('Random Forest Regressor:')
+print()
+forest = RandomForestRegressor(n_estimators = 400,max_depth=15,n_jobs=5)        
+forest.fit(X_train,y_train)
+y_pred=forest.predict(X_test)
+print('Accuracy:',forest.score(X_test, y_test)*100)
+print('MAE:', metrics.mean_absolute_error(y_test, y_pred))
+print('MSE:', metrics.mean_squared_error(y_test, y_pred))
+print('RMSE:', np.sqrt(metrics.mean_squared_error(y_test, y_pred)))
+
+
+sns.scatterplot(y_pred, y_test)
+
+# The Forest Regressor model is the best fit for the data set 
+
+
+
+
+
